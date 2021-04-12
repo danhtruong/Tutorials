@@ -1,2 +1,2 @@
 # Tutorials
-Tutorials for R
+Repository for tutorials that I created in R. 
