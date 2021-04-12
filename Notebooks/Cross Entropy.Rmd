@@ -1,0 +1,31 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+$$ H(X) = - \Sigma_{i=1}^{n} P(X_{i}) logP(X_{i})$$
+
+```{r}
+
+```
+
+```{r}
+entropy <- function(prob){
+  s = -sum(prob * log2(prob))
+  return(s)
+}
+```
+
+```{r}
+data("mtcars")
+head(mtcars)
+```
+
+We can calulate the entropy of the engine type. Another way of stating the question is asking how pure is this data set with respect to engine type? If the data set only have 4 cylinder cars, then it is 100% pure. 
+
+```{r}
+freq <- table(mtcars$cyl)/length(mtcars$cyl) #Find the frequency for each type of engine
+cyl_prob <- as.data.frame(freq)[,2]
+e0 <- entropy(cyl_prob) 
+cat('\n The entropy is:', e0)
+```
