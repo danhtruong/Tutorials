@@ -1,0 +1,328 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+#Implementing NN in R
+# input matrix
+X=matrix(c(1,0,1,0,1,0,1,1,0,1,0,1),nrow = 3, ncol=4,byrow = TRUE)
+
+# output matrix
+Y=matrix(c(1,0,0),byrow=FALSE)
+```
+
+```{r}
+#sigmoid function
+sigmoid<-function(x){
+1/(1+exp(-x))
+}
+
+# derivative of sigmoid function
+derivatives_sigmoid<-function(x){
+x*(1-x)
+}
+```
+
+```{r}
+# variable initialization
+epoch=10000 #number of iteration
+lr=0.5
+inputlayer_neurons=ncol(X)
+hiddenlayer_neurons=5
+output_neurons=1
+```
+
+```{r}
+#weight and bias initialization
+wh=matrix(rnorm(inputlayer_neurons*hiddenlayer_neurons,mean=0,sd=1), inputlayer_neurons, hiddenlayer_neurons) #create a inputlayer_neurons x  hiddenlayer_neurons matrix
+wh
+bias_input=rep(runif(hiddenlayer_neurons), nrow(X))
+bh=matrix(bias_input, nrow = nrow(X), byrow = FALSE)
+bh
+
+wout=matrix(rnorm(hiddenlayer_neurons*output_neurons,mean=0,sd=1), hiddenlayer_neurons, output_neurons)
+wout
+
+bias_output=rep(runif(output_neurons),nrow(X))
+bout=matrix(bias_output,nrow = nrow(X),byrow = FALSE)
+bout
+```
+
+
+```{r}
+# forward propagation
+for(i in 1:epoch){
+
+
+  hidden_layer_input=X%*%wh+bh
+  hidden_layer_activations=sigmoid(hidden_layer_input)
+  
+  output_layer_input=hidden_layer_activations%*%wout+bout
+  output= sigmoid(output_layer_input)
+  
+  # Back Propagation
+  
+  E=Y-output #loss function
+  slope_output_layer=derivatives_sigmoid(output)
+  slope_hidden_layer=derivatives_sigmoid(hidden_layer_activations)
+  
+  d_output=E*slope_output_layer
+  
+  Error_at_hidden_layer=d_output%*%t(wout)
+  d_hiddenlayer=Error_at_hidden_layer*slope_hidden_layer
+  
+  wout= wout + (t(hidden_layer_activations)%*%d_output)*lr
+  bout= bout+rowSums(d_output)*lr
+  
+  wh = wh +(t(X)%*%d_hiddenlayer)*lr
+  bh = bh + rowSums(d_hiddenlayer)*lr
+
+}
+output
+```
+```{r}
+# libraries
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(caret))
+
+# set up data
+id <- sample(rep(1:4, 2), 8)
+X <- matrix(c(0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1), nrow = 4, byrow = FALSE)
+X <- X[id,]
+y <- matrix(c(0, 1, 1, 0, 1, 0, 0, 1), nrow = 4)
+y <- y[id,]
+
+# activation function
+# sigmoid
+sigmoid <- function(x) return(1/(1+exp(-x)))
+d.sigmoid <- function(x) return(x*(1-x))
+```
+
+```{r}
+# neural net function with 1 hidden layer - user specifies number of nodes
+myNeuralNet <- function(X, y, hl, niters, learning.rate){
+
+  # add in intercept
+  X <- cbind(rep(1, nrow(X)), X)
+
+  # set error array
+  error <- rep(0, niters)
+
+  # set up weights
+  # the +1 is to add in the intercept/bias parameter
+  W1 <- matrix(runif(ncol(X)*hl[1], -1, 1), nrow = ncol(X))
+  W2 <- matrix(runif((hl[1]+1)*hl[2], -1, 1), nrow = hl[1]+1)
+  W3 <- matrix(runif((hl[2]+1)*ncol(y), -1, 1), nrow = hl[2]+1)
+
+  for(k in 1:niters){
+
+    # calculate the hidden and output layers using X and hidden layer as inputs
+    # hidden layer 1 and 2 have a column of ones appended for the bias term
+    hidden1 <- cbind(matrix(1, nrow = nrow(X)), sigmoid(X %*% W1))
+    hidden2 <- cbind(matrix(1, nrow = nrow(X)), sigmoid(hidden1 %*% W2))
+    y_hat <- sigmoid(hidden2 %*% W3)
+
+    # calculate the gradient and back prop the errors
+    # see theory above
+    y_hat_del <- (y-y_hat)*(d.sigmoid(y_hat))
+    hidden2_del <- y_hat_del %*% t(W3)*d.sigmoid(hidden2)
+    hidden1_del <- hidden2_del[,-1] %*% t(W2)*d.sigmoid(hidden1)
+
+    # update the weights
+    W3 <- W3 + learning.rate*t(hidden2) %*% y_hat_del
+    W2 <- W2 + learning.rate*t(hidden1) %*% hidden2_del[,-1]
+    W1 <- W1 + learning.rate*t(X) %*% hidden1_del[,-1]
+
+    # storing error (MSE)
+    error[k] <- 1/nrow(y)*sum((y-y_hat)^2)
+    if((k %% (10^4+1)) == 0) cat("mse:", error[k], "\n")
+  }
+
+  # plot loss
+  xvals <- seq(1, niters, length = 1000)
+  print(qplot(xvals, error[xvals], geom = "line", main = "MSE", xlab = "Iteration"))
+
+  return(y_hat)
+}
+```
+
+```{r}
+# set parameters
+hidden.layers <- c(6, 6)
+iter <- 50000
+lr <- 0.02
+
+# run neural net
+out <- myNeuralNet(X, y, hl = hidden.layers, niters= iter, learning.rate = lr)
+```
+```{r}
+circulo <- function(x, R, centroX=0, centroY=0){
+r = R * sqrt(runif(x))
+theta = runif(x) * 2 * pi
+x = centroX + r * cos(theta)
+y = centroY + r * sin(theta)
+
+z = data.frame(x = x, y = y)
+return(z)
+}
+
+datos1 <- circulo(150,0.5)
+datos2 <- circulo(150,1.5)
+
+datos1$Y <- 1
+datos2$Y <- 0
+datos <- rbind(datos1,datos2)
+
+rm(datos1,datos2, circulo)
+
+X <- as.matrix(datos[,1:2])
+Y <- as.matrix(datos[,3])
+```
+
+
+
+```{r}
+neuron <- setRefClass(
+  "neuron",
+  fields = list(
+    activation_function = "list",
+    number_of_connections = "numeric",
+    number_of_neurons = "numeric",
+    W = "matrix",
+    b = "numeric"
+  ),
+  methods = list(
+    initialize = function(activation_function, number_of_connections, number_of_neurons)
+    {
+      activation_function <<- activation_function
+      number_of_connections <<- number_of_connections
+      number_of_neurons <<- number_of_neurons
+      W <<- matrix(runif(number_of_connections*number_of_neurons),
+                   nrow = number_of_connections)
+      b <<- runif(number_of_neurons)
+    }
+  )
+)
+```
+
+```{r}
+sigmoid = function(x) {
+  y = list() 
+  y[['x']] <- 1 / (1 + exp(-x))
+  y[['dx']] <- x * (1 - x)
+  return(y)
+}
+```
+
+```{r}
+relu <- function(x){
+  y <- list()
+  y[['x']] <- ifelse(x<0,0,x)
+  y[['dx']] <- ifelse(x<0,0,1)
+  return(y)
+}
+```
+
+
+```{r}
+n = ncol(X) 
+layers = c(n, 4, 8, 1) 
+functions = list(sigmoid = sigmoid, relu = relu, sigmoid = sigmoid) 
+neural_network <- list()
+
+for (i in 1:(length(layers)-1)){
+    neural_network[[paste('Neuron',i)]] <- neuron$new(functions[i],layers[i], layers[i+1])
+    
+}
+
+neural_network
+```
+
+```{r}
+forward <- function(nn, X,Y){
+
+out = list()
+out[['Input Layer']] <- c(list(matrix(0,ncol=2,nrow=1)), list(X))
+names(out[['Input Layer']]) <- c('z', 'a')
+  for(i in c(1:(length(nn)))){
+    z = list((out[[i]][[2]] %*% nn[[i]]$W + nn[[i]]$b)) #multiply input by weights adjusted by bias
+    a = list(nn[[i]]$activation_function[[1]](z[[1]])[['x']])
+    
+    out[[i+1]] <- c(z,a)
+    names(out[[i+1]]) <- c('z', 'a')
+    
+    if (i == length(nn))
+      names(out)[[i+1]] <- 'Output Layer'
+    else
+      names(out)[[i+1]] <- paste('Hidden Layer', i)
+    
+  }
+return(out)
+}
+```
+
+```{r}
+f1 <- forward(neural_network, X,Y)
+head(f1$`Output Layer`$a)
+```
+```{r}
+backprop <- function(forward, nn,Y, lr = 0.05){
+
+  for (i in rev(1:length(nn))){
+    z = forward[[i+1]][['z']]
+    a = forward[[i+1]][['a']]
+  
+    if(i == length(nn)){
+      delta <- (Y - a) * nn[[i]]$activation_function[[1]](a)[['dx']]
+    } else{
+      delta <- delta %*% W  * nn[[i]]$activation_function[[1]](a)[['dx']]
+    }
+
+    W = t(nn[[i]]$W)
+    
+
+    nn[[i]]$b <- nn[[i]]$b - mean(delta) * lr
+    nn[[i]]$W <- nn[[i]]$W - t(forward[[i]][['a']]) %*% delta * lr
+  }
+  x = list()
+  x[[1]] <- nn
+  x[[2]] <- forward[[length(forward)]][['a']]
+  return(x)
+}
+```
+
+```{r}
+b1 <- backprop(f1, neural_network, Y)
+```
+
+```{r}
+Y_updated <- X
+for (i in seq(1000)){
+  
+  f1 <- forward(neural_network, Y_updated, Y)
+  b1 <- backprop(f1, neural_network, Y, 0.01)
+  Y_updated[,2] <- b1[[2]]
+  if(i %% 25 == 0){
+    if(i == 25){
+      iteracion <- i
+      error <- mean(Y_updated[,2] - Y)^2
+    }else{
+          iteracion <- c(iteracion,i)
+          error <- c(error,mean(Y_updated[,2] - Y)^2)      
+    }
+  }
+}
+
+head(Y_updated[,2])
+```
+
+```{r}
+library(ggplot2)
+
+grafico = data.frame(Iteracion = iteracion, Error = error)
+
+ggplot(grafico,aes(iteracion, error)) + geom_line() + theme_minimal() +
+  labs(title = "Evolución del error de la Red Neuronal")
+```
+
