@@ -180,7 +180,14 @@ X <- as.matrix(datos[,1:2])
 Y <- as.matrix(datos[,3])
 ```
 
+```{r}
+#Implementing NN in R
+# input matrix
+X=matrix(c(1,0,1,0,1,0,1,1,0,1,0,1),nrow = 3, ncol=4,byrow = TRUE)
 
+# output matrix
+Y=matrix(c(1,0,0),byrow=FALSE)
+```
 
 ```{r}
 neuron <- setRefClass(
@@ -213,9 +220,7 @@ sigmoid = function(x) {
   y[['dx']] <- x * (1 - x)
   return(y)
 }
-```
 
-```{r}
 relu <- function(x){
   y <- list()
   y[['x']] <- ifelse(x<0,0,x)
@@ -225,7 +230,17 @@ relu <- function(x){
 ```
 
 
+
 ```{r}
+#Implementing NN in R
+# input matrix
+X=matrix(c(1,0,1,0,1,0,1,1,0,1,0,1),nrow = 3, ncol=4,byrow = TRUE)
+
+# output matrix
+Y=matrix(c(1,0,1),byrow=FALSE)
+
+
+
 n = ncol(X) 
 layers = c(n, 4, 8, 1) 
 functions = list(sigmoid = sigmoid, relu = relu, sigmoid = sigmoid) 
@@ -274,7 +289,7 @@ backprop <- function(forward, nn,Y, lr = 0.05){
     a = forward[[i+1]][['a']]
   
     if(i == length(nn)){
-      delta <- (Y - a) * nn[[i]]$activation_function[[1]](a)[['dx']]
+      delta <- 2 * (Y - a) * nn[[i]]$activation_function[[1]](a)[['dx']]
     } else{
       delta <- delta %*% W  * nn[[i]]$activation_function[[1]](a)[['dx']]
     }
@@ -282,8 +297,8 @@ backprop <- function(forward, nn,Y, lr = 0.05){
     W = t(nn[[i]]$W)
     
 
-    nn[[i]]$b <- nn[[i]]$b - mean(delta) * lr
-    nn[[i]]$W <- nn[[i]]$W - t(forward[[i]][['a']]) %*% delta * lr
+    nn[[i]]$b <- nn[[i]]$b + mean(delta) * lr
+    nn[[i]]$W <- nn[[i]]$W + t(forward[[i]][['a']]) %*% delta * lr
   }
   x = list()
   x[[1]] <- nn
@@ -297,24 +312,26 @@ b1 <- backprop(f1, neural_network, Y)
 ```
 
 ```{r}
-Y_updated <- X
-for (i in seq(1000)){
-  
-  f1 <- forward(neural_network, Y_updated, Y)
-  b1 <- backprop(f1, neural_network, Y, 0.01)
-  Y_updated[,2] <- b1[[2]]
-  if(i %% 25 == 0){
-    if(i == 25){
-      iteracion <- i
-      error <- mean(Y_updated[,2] - Y)^2
-    }else{
-          iteracion <- c(iteracion,i)
-          error <- c(error,mean(Y_updated[,2] - Y)^2)      
+training <- function(neural_network,X, Y, iteractions, lr = 2){
+  Y_updated <- X
+  for (i in seq(iteractions)){
+    f1 <- forward(neural_network, Y_updated, Y)
+    b1 <- backprop(f1, neural_network, Y, lr)
+    Y_updated[,2] <- b1[[2]]
+    if(i %% 25 == 0){
+      if(i == 25){
+        iteractions <- i
+        error <- mean(Y_updated[,2] - Y)^2
+      }else{
+            iteractions <- c(iteractions,i)
+            error <- c(error,mean(Y_updated[,2] - Y)^2)      
+      }
     }
   }
+  return(Y_updated[,2])
 }
-
-head(Y_updated[,2])
+prediction <- training(neural_network, X, Y, 1000)
+head(prediction)
 ```
 
 ```{r}
@@ -324,5 +341,23 @@ grafico = data.frame(Iteracion = iteracion, Error = error)
 
 ggplot(grafico,aes(iteracion, error)) + geom_line() + theme_minimal() +
   labs(title = "Evolución del error de la Red Neuronal")
+```
+
+```{r}
+library(neuralnet)
+```
+
+```{r}
+data(iris)
+df <- data.frame(X,Y)
+nn= neuralnet(Y~X1 + X2 + X3 + X4, data=df, hidden=c(4,8),act.fct = "logistic",
+                linear.output = FALSE)
+```
+
+```{r}
+plot(nn)
+```
+```{r}
+Predict=compute(nn,df)
 ```
 
