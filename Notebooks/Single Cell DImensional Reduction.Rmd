@@ -1,0 +1,57 @@
+---
+title: "Seurat-Guided-Clustering-Tutorial"
+output:
+  md_document:
+    variant: markdown_github
+---
+
+While the vignette on the Seurat website already provides good instructions, I will be using this to give additional thoughts and details that could help beginners to Seurat. In addition, I will provide some recommendations on the workflow as well.
+
+<h2>Loading the library and previous data</h2>
+
+```{r}
+library(Seurat)
+library(cowplot)
+library(ggplot2)
+pbmc <- readRDS(file = "pbmc3k_final.rds")
+```
+
+```{r}
+plot1 <- DimPlot(pbmc, reduction = "umap", label = TRUE, pt.size = 0.5) + NoLegend() + ggtitle('Manual Annotations')
+plot2 <- DimPlot(pbmc, reduction = "umap", group.by = 'SingleR.Annotations', label = TRUE, pt.size = 0.5) + NoLegend() + ggtitle('SingleR Annotations')
+plot1 + plot2
+```
+
+```{r}
+ElbowPlot(pbmc)
+```
+
+```{r}
+dims <- c(3,5,10,15)
+reduction_name <- paste0('umap_', dims)
+for (i in 1:length(dims)){
+  pbmc <- RunUMAP(pbmc, dims = 1:dims[i], reduction.name = reduction_name[i])
+}
+```
+
+```{r}
+umap.list <- list()
+for (i in reduction_name){
+  umap.list[[i]] <- DimPlot(pbmc, reduction = i, label = TRUE, repel = TRUE) + ggtitle(i)
+}
+legend<- get_legend(
+  umap.list[[1]] + 
+    guides(color = guide_legend(ncol = 1)) +
+    theme(legend.position = "bottom")
+)
+
+  umap.list <- lapply(umap.list, function(x) {x + theme(legend.position="none", axis.title = element_blank())})
+
+p <- plot_grid(plotlist = umap.list)
+plot_grid(p, legend, rel_widths = c(3,1))
+```
+
+```{r}
+
+```
+

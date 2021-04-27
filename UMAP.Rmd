@@ -1,0 +1,124 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+data(iris)
+data <- iris[,1:4]
+head(data)
+```
+
+```{r}
+library(uwot)
+umap_reduction <- umap(data)
+```
+
+```{r}
+umap_reduction <- as.data.frame(umap_reduction)
+umap_reduction <- cbind(umap_reduction, iris[,5])
+colnames(umap_reduction) <- c('x','y','species')
+```
+
+```{r}
+library(ggplot2)
+ggplot(umap_reduction, aes(x,y, color = species)) + geom_point()
+```
+
+
+```{r}
+dist = dist(data, method = "euclidean", diag = FALSE, upper = FALSE, p = 2) ** 2
+dist_m = as.matrix(dist)
+```
+
+```{r}
+rho = c()
+for (i in 1:dim(dist_m)[1]){
+  value <- sort(dist_m[,i])[2]
+  rho = append(rho, value )
+}
+```
+
+```{r}
+prob_high_dim <- function(sigma, dist_row, dist, rho){
+  #For each row of Euclidean distance matrix (dist_row) compute probability in high dimensions (1D array)
+  d = dist[dist_row,] - rho[dist_row]
+  d[d<0] = 0
+  return(exp(-d /sigma))
+}
+
+k <- function(prob){
+  #Compute n_neighbor = k (scalar) for each 1D array of high-dimensional probability
+  return(2 ** sum(prob))
+}
+```
+
+```{r}
+sigma_binary_search <- function(fixed_k, dist_row, dist, rho){
+  #Solve equation k_of_sigma(sigma) = fixed_k with respect to sigma by the binary search algorithm
+  sigma_lower_limit = 0
+  sigma_upper_limit = 1000
+  for (i in 1:20){
+    approx_sigma = (sigma_lower_limit + sigma_upper_limit) / 2
+    k_of_sigma <- k(prob_high_dim(approx_sigma, dist_row, dist, rho))
+    if (k_of_sigma < fixed_k)
+      sigma_lower_limit = approx_sigma
+    else
+      sigma_upper_limit = approx_sigma
+    if (abs(fixed_k - k(prob_high_dim(approx_sigma, dist_row, dist, rho))) <= 1e-5)
+      break
+    return(approx_sigma)
+  }
+}
+n_neighbors = 15
+n = dim(data)[1]
+prob = matrix(0, n,n)
+sigma_array = c()
+for (dist_row in 1:n){
+  binary_search_result = sigma_binary_search(n_neighbors, dist_row, dist_m, rho)
+  prob[dist_row] = prob_high_dim(binary_search_result, dist_row, dist_m, rho)
+  sigma_array = append(sigma_array, binary_search_result) 
+}
+```
+
+```{r}
+P = (prob + t(prob)) / 2
+```
+
+```{r}
+min_dist = 0.25
+
+x = seq(from = 0, to = 3, by = 1/300)
+
+f <- function(x, min_dist){
+        y = c()
+        for (i in 1:length(x))
+            if (x[i] <= min_dist)
+                y = append(y,1)
+            else
+                y = append(y, exp(- x[i] + min_dist))
+        return(y)
+}
+y = f(x,min_dist )
+p <- nls(y~(1 / (1 + a * x ** (2*b))))
+a <- coef(p)['a']
+b <- coef(p)['b']
+```
+```{r}
+prob_low_dim <- function(Y){
+  inv_distances = power(1 + a * matrix(dist(Y))**b, -1)
+  return(inv_distances)
+}
+
+CE <- function(P,Y){
+  Q = prob_low_dim(Y)
+  return(- P * log(Q + 0.01) - (1- P) * log(1 - Q + 0.01))
+}
+
+CE_gradient <- function(P,Y){
+  y_diff = 
+  
+}
+```
+
+
