@@ -1,0 +1,66 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+quality = read.csv('quality.csv')
+```
+
+```{r}
+str(quality)
+```
+```{r}
+table(quality$PoorCare)
+```
+
+```{r}
+#install.packages('caTools')
+library(caTools)
+set.seed(88)
+split = sample.split(quality$PoorCare, SplitRatio = 0.75)
+qualityTrain = subset(quality, split == TRUE)
+qualityTest = subset(quality, split == FALSE)
+```
+
+```{r}
+QualityLog = glm(PoorCare ~ OfficeVisits + Narcotics, data = qualityTrain, family = binomial())
+summary(QualityLog)
+```
+
+```{r}
+predictTrain = predict(QualityLog, type ='response')
+summary(predictTrain)
+```
+
+```{r}
+df <- read.csv(file = "https://stats.idre.ucla.edu/stat/data/binary.csv")
+df$rank <- as.factor(df$rank)
+summary(df)
+xtabs(~ admit +rank ,data=df)
+```
+
+```{r}
+#install.packages('caTools')
+library(caTools)
+set.seed(88)
+split = sample.split(df$gpa, SplitRatio = 0.75)
+train = subset(df, split == TRUE)
+test = subset(df, split == FALSE)
+summary(train)
+summary(test)
+```
+
+
+```{r}
+model_logit <- glm(admit ~ gre+gpa+rank, data=train, family="binomial")
+model_linear <- lm(admit ~ gre+gpa+rank, data=train)
+summary(model_logit)
+
+summary(model_linear)
+```
+```{r}
+ p <- predict(model_logit, test[,2:4], type = 'response')
+ cbind(p, test[,])
+```
+

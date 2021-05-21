@@ -1,0 +1,51 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+events <- c('red', 'green','blue')
+p <- c(0.10, 0.40, 0.50)
+q <- c(0.80, 0.15, 0.05)
+
+df_p <- data.frame(x = events, y = p)
+df_q <- data.frame(x = events, y = q)
+```
+
+```{r}
+library(ggplot2)
+ggplot(df_p, aes(x=x,  y=y)) + geom_bar(stat = 'identity')
+
+ggplot(df_q, aes(x=x,  y=y)) + geom_bar(stat = 'identity')
+```
+
+```{r}
+kl_divergence <- function(p,q){
+  return(sum(p*log2(p/q)))
+}
+```
+
+```{r}
+kl_divergence(p,q)
+kl_divergence(q,p)
+
+kl_divergence(p,q)/log2(exp(1))
+kl_divergence(q,p)/log2(exp(1))
+```
+
+```{r}
+js_divergence <- function(p,q){
+  m = 0.5 * (p + q)
+  return(0.5 * kl_divergence(p,m) + 0.5 * kl_divergence(q,m))
+}
+```
+
+```{r}
+js_divergence(p,q)
+js_divergence(p,q) ^ 0.5
+```
+

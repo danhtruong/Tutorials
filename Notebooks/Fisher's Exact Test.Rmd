@@ -1,0 +1,31 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+The hypotheses of the Fisher’s exact test are the same than for the Chi-square test, that is:
+
+$H_{0}$ : the variables are independent, there is no relationship between the two categorical variables. Knowing the value of one variable does not help to predict the value of the other variable
+$H_{1}$ : the variables are dependent, there is a relationship between the two categorical variables. Knowing the value of one variable helps to predict the value of the other variable
+
+```{r}
+dat <- data.frame(
+  "smoke_no" = c(7, 0),
+  "smoke_yes" = c(2, 5),
+  row.names = c("Athlete", "Non-athlete"),
+  stringsAsFactors = FALSE
+)
+colnames(dat) <- c("Non-smoker", "Smoker")
+
+dat
+```
+
+```{r}
+chisq.test(dat)$expected
+```
+
+```{r}
+test <- fisher.test(dat)
+test
+```
+
