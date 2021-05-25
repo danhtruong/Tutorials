@@ -1,0 +1,78 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+
+
+
+$P(\theta|data) = \frac{P(data|\theta)\times(\theta)}{P(data)}$
+
+$P(\theta|data)$ - is the probability of $\theta$ given that your data is true
+
+$P(data|\theta)$ is the probability of your $data$ being true given that $\theta$ happened
+
+$P(\theta)$ is the unconditional probability of $\theta$ occuring
+
+$P(data)$ is the unconditional probability of $data$ occuring
+
+```{r}
+data("UCBAdmissions")
+margin.table(UCBAdmissions, c(1,2))
+rowSums(margin.table(UCBAdmissions, c(1,2)))
+colSums(margin.table(UCBAdmissions, c(1,2)))
+#prop.table(margin.table(UCBAdmissions, c(1,2)), 1)
+```
+
+
+$P(A|B) = \frac{P(B|A)\times P(A)}{P(B)}$
+```{r}
+p_a <- (2691/(1835+2691)) #probability of being male
+p_b <- 1755/(1755+2771) #probability of being admitted
+p_b_a <-   (1198/(1835+2691)) / p_a #probability of being admitted given male
+p_a_b <- (p_b_a * p_a)/p_b #probability of being male given admitted
+
+p_a_b
+1198/(1198+557)
+```
+
+
+
+```{}
+ftable(UCBAdmissions, c(2,3),
+       row.vars="Dept", col.vars = c("Gender", "Admit"))
+```
+
+```{r}
+ftable(round(prop.table(UCBAdmissions, c(3)), 2),
+       row.vars="Dept", col.vars = c("Gender", "Admit"))
+```
+
+
+
+
+
+```{r}
+rangeP <- seq(0, 1, length.out = 100)
+plot(rangeP, dbinom(x = 8, prob = rangeP, size = 10),
+type = "l", xlab = "P(Black)", ylab = "Density")
+```
+
+```{r}
+plot(rangeP, dbinom(x = 8, prob = rangeP, size = 10),
+type = "l", xlab = "P(Black)", ylab = "Density")
+lines(rangeP, dnorm(x = rangeP, mean = .5, sd = .1) / 15,
+col = "red")
+```
+
+```{r}
+plot(rangeP, dbinom(x = 8, prob = rangeP, size = 10),
+type = "l", xlab = "P(Black)", ylab = "Density")
+lines(rangeP, dnorm(x = rangeP, mean = .5, sd = .1) / 15,
+col = "red")
+lik <- dbinom(x = 8, prob = rangeP, size = 10)
+prior <- dnorm(x = rangeP, mean = .5, sd = .1)
+lines(rangeP, lik * prior, col = "blue")
+```
+
