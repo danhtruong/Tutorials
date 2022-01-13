@@ -343,21 +343,5 @@ ggplot(grafico,aes(iteracion, error)) + geom_line() + theme_minimal() +
   labs(title = "Evolución del error de la Red Neuronal")
 ```
 
-```{r}
-library(neuralnet)
-```
 
-```{r}
-data(iris)
-df <- data.frame(X,Y)
-nn= neuralnet(Y~X1 + X2 + X3 + X4, data=df, hidden=c(4,8),act.fct = "logistic",
-                linear.output = FALSE)
-```
-
-```{r}
-plot(nn)
-```
-```{r}
-Predict=compute(nn,df)
-```
 

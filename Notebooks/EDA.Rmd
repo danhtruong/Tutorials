@@ -1,0 +1,120 @@
+---
+layout: post
+title: "Exploratory Data Analysis"
+tags: tutorials bioinformatics R machine-learning
+output: md_document
+---
+
+In this post, we will be analyzing data as if we were looking at it for the first time. This is called 'Exploratory Data Analysis'. We will gather insights from the `iris` dataset. First, let's load up the data and have a brief look at it. Using `class`, we can see that the dataset is a `data.frame`.
+
+```{r}
+data(iris)
+class(iris)
+```
+
+Using `head`, we can take a look at the first 5 rows. This may be helpful when analyzing large datasets. 
+
+```{r}
+head(iris)
+```
+
+There are 4 columns that are made up of numbers and one with strings. The fifth column `Species` suggests that each row corresponds to a data from a single sample of that species. We can also use `dim` to find the full dimensions of the data. 
+
+```{r}
+dim(iris)
+```
+
+This tells us that there are 150 rows and 5 columns in this dataframe. It is also good practice to use the `str` function to briefly look at the structure of the data.
+
+```{r}
+str(iris)
+```
+Again, this confirmed our brief look earlier that there are 4 columns of numeric values. We can also see that the fifth column is actually a `Factor` with 3 levels. Using `summmary`, we can acquire some insight on the data distribution. 
+
+```{r}
+summary(iris)
+```
+
+We can start by using a boxplot, also called box and whiskers, to look at the distribution of `Sepal.Length` between the three species. A boxplot summarises the data with five numbers:
+
+- Minimum
+- First Quartile
+- Median
+- Third Quartile
+- Maximum
+
+Typically, the rectangle spans the first and third quartile of the dataset, which is also known as the interquartile range (IQR). The line in the middle denotes the median, and the whiskers above and below denote the maximum and minimum respectively. 
+```{r}
+library(ggplot2)
+ggplot(iris, mapping = aes(y = Sepal.Length, x = Species, fill = Species)) + geom_boxplot()
+```
+
+We can also plot multiple graphs using `facet_wrap`, but first we need to reshape the dataframe in the `long` format.
+
+```{r}
+library(reshape2)
+
+iris_melt <-  melt(iris, id = 'Species') #reshaping the dataframe
+head(iris_melt)
+```
+
+Now the data is in a `long` format where each row provides a sample id `Species`, a variable, like `Sepal.Length`, and the corresponding value. 
+
+```{r}
+ggplot(iris_melt, aes(x = Species, y = value, fill = Species)) +
+  geom_boxplot() + 
+  facet_wrap(~variable)
+```
+
+It looks like `virginica` has the longest `Sepal.Length`. We can test for this using basic statistics. Let's perform a simple Student's t-Test between `virginica` and `setosa`. We will use the reshaped dataframe and remove the `versicolor` species. 
+
+```{r}
+iris_subset_melt <- subset(iris_melt, subset = Species == 'virginica' | Species == 'setosa' ) #removing versicolor so we have the two groups we are comparing
+head(iris_subset_melt)
+```
+
+Let's do some more data wrangling to set up our data. Essentially, we will create two numeric vectors corresponding to `Sepal.Length` for both species.
+
+```{r}
+setosa_sepal_length = subset(iris_subset_melt, 
+                             subset = 
+                               variable == 'Sepal.Length' & 
+                               Species == 'setosa')$value  #selecting only values for setosa
+
+virginica_sepal_length = subset(iris_subset_melt, 
+                                subset = 
+                                  variable == 'Sepal.Length' & 
+                                  Species == 'virginica')$value #selecting only values for virginica
+```
+
+With that, we are ready to perform the Student's t-Test for two samples. Essentially, we are comparing the means of two groups from a single variable. 
+
+```{r}
+t.test(setosa_sepal_length, virginica_sepal_length)
+```
+The graph already suggested that the two species were different based on the `Petal.Length`. Here the `p-value` is less than 2.2e-16, where a typical alpha is 0.05. Therefore, the null hypothesis where there is no difference is rejected. 
+
+If we want to continue performing more comparisons, we will run into the multiple testing problem. In other words, if we keep testing different variables, we will eventually find a difference. Since, we are expecting a 5% chance of incorrectly rejecting the null hypothesis, then performing 100 multiple comparisons will result in 5 incorrect rejections or false positives. A simple way to correct for this is [Bonferroni correction](https://mathworld.wolfram.com/BonferroniCorrection.html), which just divides  alpha by the number of comparisons. There are additional methods, which you can read more [here](https://www.biochemia-medica.com/en/journal/21/3/10.11613/BM.2011.029/fullArticle).
+
+To compare multiple groups, we will perform a One-Way ANOVA. While t-tests compare only two groups, an ANOVA can compare three or more groups. One more note is that an ANOVA only tests if one or more mean is different. Post-hoc comparison test will be needed to find which pairwise comparison was stastically different. 
+
+```{r}
+iris_anova <- aov(Sepal.Width ~ Species, data = iris)
+summary(iris_anova)
+```
+
+There is a difference between `Species` just on `Sepal.Length` alone. It is significant with a p-value <2e-16. However, we do not know which direction or between which `Species`. We can use a pairwise t-test to find out. First, we will try without any multiple testing correction. 
+
+```{r}
+pairwise.t.test(x = iris$Sepal.Length, g = iris$Species, p.adj = 'none')
+```
+
+Now with we can try with Bonferroni correction. 
+
+```{r}
+pairwise.t.test(x = iris$Sepal.Length, g = iris$Species, p.adj = 'bonf')
+```
+
+The result is still the same, but it may not always be the case. See [here]().
+
+
