@@ -19,10 +19,26 @@ $P(data)$ is the unconditional probability of $data$ occuring
 
 ```{r}
 data("UCBAdmissions")
+head(UCBAdmissions)
+UCBAdmissions_table <- addmargins(UCBAdmissions)
+UCBAdmissions_table
+```
+
+```{r}
+UCBAdmissions_table_df <- as.data.frame.table(UCBAdmissions_table)
+head(UCBAdmissions_table_df)
+```
+
+```{r}
+margin.table(UCBAdmissions_table_df[UCBAdmissions_table_df$Dept == 'Sum',])
+```
+
+
+```{r}
 margin.table(UCBAdmissions, c(1,2))
 rowSums(margin.table(UCBAdmissions, c(1,2)))
 colSums(margin.table(UCBAdmissions, c(1,2)))
-#prop.table(margin.table(UCBAdmissions, c(1,2)), 1)
+prop.table(margin.table(UCBAdmissions, c(1,2)), 1)
 ```
 
 
@@ -39,7 +55,7 @@ p_a_b
 
 
 
-```{}
+```{r}
 ftable(UCBAdmissions, c(2,3),
        row.vars="Dept", col.vars = c("Gender", "Admit"))
 ```
@@ -48,9 +64,6 @@ ftable(UCBAdmissions, c(2,3),
 ftable(round(prop.table(UCBAdmissions, c(3)), 2),
        row.vars="Dept", col.vars = c("Gender", "Admit"))
 ```
-
-
-
 
 
 ```{r}

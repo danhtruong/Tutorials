@@ -1,30 +1,38 @@
 ---
 title: "Non-negative Matrix Factorization"
-layout: post
-output: html_document
-tags: bioinformatics tips
+output:
+  md_document:
+    variant: markdown_github
 ---
 
-In this post, I will be discussing Non-negative Matrix Factorization (NMF). NMF is a low-rank approximation algorithm that discovers latent features in your data. It is similar to PCA in the sense that they both reduce high-dimensional data into lower dimensions for better understanding of the data. The major difference is that PCA projects data onto a subspace that maximizes variability for the discovered features, while NMF discovers non-negative features that are additive in nature. NMF is formally defined as:
-<div>
-$$V \approx W H$$
-</div>
+## Non-negative Matrix Factorization
+
+In this post, I will be discussing Non-negative Matrix Factorization (NMF). NMF is a low-rank approximation algorithm that discovers latent features in your data. It is similar to PCA in the sense that they both reduce high-dimensional data into lower dimensions for better understanding of the data. The major difference is that PCA projects data onto a subspace that maximizes variability for the discovered features, while NMF discovers non-negative features that are additive in nature.
+
+NMF is formally defined as:
+
+$$V \approx{WH}$$
+
 where $V$ is a non-negative matrix and both $W$ and $H$ are unique and non-negative matrices. In other words, the matrix $V$ is factorized into two matrices $W$ and $H$, where $W$ is the features matrix or the basis and $H$ is the coefficient matrix. Typically, this means that $H$ represents a coordinate system that uses $W$ to reconstruct $V$. We can consider that $V$ is a linear combination of column vectors of $W$ using the coordinate system in $H$, $v_{i} = Wh_{i}$.
+
+## Solving for NMF
 
 Here, I will describe two algorithms to solve for NMF using iterative updates of $W$ and $H$. First, we will consider the cost function. A cost function is a function that quantifies or measures the error between the predicted values and the expected values. The Mean Squared Error (MSE), or L2 loss is one of the most popular cost functions in linear regressions. Given an linear equation $y = mx + b$, MSE is:
 
-<div>
-$$MSE = \frac{1}{N}\Sigma_{i=1}^{n}(y_{i}-(mx_{i}+b))^{2} $$
-</div>
+
+$$MSE = \frac{1}{N}\Sigma_{i=1}^{n}(y_{i}-(mx_{i}+b))^{2}$$
+
 
 For the cost function in NMF, we use a similar function called the Frobenius Norm. It is defined as:
-<div>
+
 $$||A||_{F} = \sqrt{\Sigma_{i=1}^{m}\Sigma_{j=1}^{n} |a_{ij}|^{2}}$$
-</div>
+
 In the case of NMF, we are using the square of the Forbenius norm to measure how good of an approximation $WH$ is for $V$.
-<div>
+
 $$||V - WH||_{F}^{2} = \Sigma_{i,j}(V - WH)^{2}_{ij}$$
-</div>
+
+## Optimization
+
 We can see that as $WH$ approaches $V$, then the equation will slowly converge to zero. Therefore, the optimization can be defined as the following:
 
 Minimize $||V - WH||_{F}^{2}$ with respect to $W$ and $H$, subject to the constraints $W,H \ge 0$
@@ -33,14 +41,16 @@ In the paper by Lee & Seung, they introduced the multiplicative update rule to s
 
 $$H_{ik} \leftarrow H_{ik}\frac{(W^{T}V)_{ik}}{(W^{T}WH)_{ik}}$$
 
-<div>
+
 $$W_{kj} \leftarrow W_{kj}\frac{(VH^{T})_{kj}}{(WHH^{T})_{kj}}$$
-</div>
+
+## Multiplicative Update Rule
+
 Here we will implement NMF using the multiplicative update rule. To get started, make sure you have installed both [R](https://www.r-project.org/) and [RStudio](https://rstudio.com/). In addition, we will also be using the package [NMF](https://cran.r-project.org/web/packages/NMF/index.html) to benchmark our work. 
 
 Here I write a function to solve for NMF using the multiplicative update rule. I added a `delta` variable to the denominator update rule to prevent division by zero. `K` specifies the column length of $W$ and the row length of $H$. `K` can also be considered as the number of hidden features we are discovering in $V$. `K` is less than $n$ in a $n \times m$ matrix. After iterating for `x` number of `steps`, the function returns a `list` containing `W` and `H` for $W$ and $H$ respectively. 
 
-```{r Multiplicative Update for NMF}
+```{r}
 nmf_mu <- function(R, K, delta = 0.001, steps = 5000){
   N = dim(R)[1]
   M = dim(R)[2]
@@ -88,44 +98,45 @@ Let's see if we can reconstruct our original matrix and compare it to the `nmf` 
 R
 nmf_mu_results$W %*% nmf_mu_results$H
 ```
+
+## Comparing to nmf()
+
 We get the same results using the `nmf` function with the `lee` method. 
 ```{r}
 nmf <- nmf(R, dim(R)[1], method = 'lee')
 basis(nmf) %*% coefficients(nmf)
 ```
 
-Now we will take a look at another method of implementing NMF. This one is called Stochastic Gradient Descent (SGD). A gradient descent is a first-order iterative optimization algorithm to finding a local minimum for a function that is differentiable. In fact, we used the Block Coordinate Descent in the multiplicative update rule. In SGD, we take the derivative of the cost function like before. However, we will now be focusing on taking the derivative of each variable, setting them to zero or lower, solving for the feature variables, and finally updating each feature. We also add a regularization term in the cost function to control for overfitting. 
-<div>
+## Stochastic Gradient Descent Method
+
+Now we will take a look at another method of implementing NMF. This one is called Stochastic Gradient Descent (SGD). A gradient descent is a first-order iterative optimization algorithm to finding a local minimum for a function that is differentiable. In fact, we used the Block Coordinate Descent in the multiplicative update rule. In SGD, we take the derivative of the cost function like before. However, we will now be focusing on taking the derivative of each variable, setting them to zero or lower, solving for the feature variables, and finally updating each feature. We also add a regularization term in the cost function to control for over fitting. 
+
 $$||V - WH||_{F}^{2} = \Sigma_{i,j}(V - WH)^{2}_{ij}$$
-</div>
-<div>
-$$e_{ij}^{2} = \Sigma_{i,j}(v_{ij}- \hat v_{ij})^{2} = (v_{ij} - \Sigma_{k=1}^{K}w_{ik}h_{kj})^{2}$$
-</div>
-<div>
+
+$$e_{ij}^{2} = \Sigma_{i,j}(v_{ij}- \hat v_{ij})^{2} = (v_{ij} - \Sigma_{k=1}^{K} w_{ik}h_{kj})^{2}$$
+
 $$e_{ij}^{2}  = (v_{ij} - \Sigma_{k=1}^{K}w_{ik}h_{kj})^{2} + \lambda\Sigma_{k=1}^{K}(||W||^{2} + ||H||^{2})$$
-</div>
+
 $\lambda$ is used to control the magnitudes of $w$ and $h$ such that they would provide a good approximation of $v$. We will update each feature with each sample. We choose a small $\lambda$, such as 0.01. The update is given by the equations below:
-<div>
+
 $$w_{ik} \leftarrow w_{ik} - \eta \frac{\partial}{\partial w_{ik}}e_{ij}^{2}$$
-</div>
-<div>
+
 $$h_{kj} \leftarrow h_{kj} - \eta \frac{\partial}{\partial h_{kj}}e_{ij}^{2}$$
-</div>
+
 $\eta$ is the learning rate and modifies the magnitude that we update the features. We first solve for $\frac{\partial}{\partial h_{kj}}e_{ij}^{2}$.
 
 Using the chain rule, $\frac{\partial}{\partial h_{kj}}(v_{ij} - \Sigma_{k=1}^{K}w_{ik}h_{kj}) = \frac{\partial u^{2}}{\partial v} \frac{\partial u}{\partial v}$, where $u = (v_{ij} - \Sigma_{k=1}^{K}w_{ik}h_{kj}) and \frac{\partial u^{2}}{\partial v} = 2u$
 
 $$ \frac{\partial}{\partial h_{kj}}e_{ij}^{2} = 2(v_{ij} - \Sigma_{k=1}^{K}w_{ik}h_{kj}) \frac{\partial}{\partial h_{kj}}(v_{ij} - \Sigma_{k=1}^{K}w_{ik}h_{kj}) + 2\lambda h_{kj} $$
-<div>
+
 $$ \frac{\partial}{\partial h_{kj}}e_{ij}^{2} = -2e_{ij}w_{ik} + 2\lambda h_{kj} $$
-</div>
+
 The final update rules for both $W$ and $H$:
-<div>
+
 $$ \frac{\partial}{\partial h_{kj}}e_{ij}^{2} = -2e_{ij}w_{ik} + 2\lambda h_{kj} $$
-</div>
-<div>
+
 $$ \frac{\partial}{\partial w_{ik}}e_{ij}^{2} = -2e_{ij}h + 2\lambda w_{ik} $$
-</div>
+
 ```{r}
 frob_norm <- function(M){
   norm = 0
@@ -162,23 +173,25 @@ nmf_sgd <- function(A,steps = 50000, lam = 1e-2, lr = 1e-3){
 nmf_sgd_results <- nmf_sgd(R)
 R
 ```
+
 The reconstructed method using our NMF function looks like this:
+
 ```{r}
 nmf_sgd_results[[1]] %*% t(nmf_sgd_results[[2]])
 ```
+
 As you can see, it is a near approximation of the original matrix. In another post, I will go into detail the differences between each dimensional reduction technique. See below for more information on NMF. 
 
 
-Sources and additional information:
+## Additional Resources
 
-<a href="https://papers.nips.cc/paper/1861-algorithms-for-non-negative-matrix-factorization.pdf" class="uri">https://papers.nips.cc/paper/1861-algorithms-for-non-negative-matrix-factorization.pdf</a>
+  -[Algorithms for non-negative matrix factorization](https://papers.nips.cc/paper/1861-algorithms-for-non-negative-matrix-factorization.pdf)
+  
+  -[Non-negative matrix factorization](https://github.com/hpark3910/nonnegative-matrix-factorization)
+  
+  -[Non-negative matrix factorization](https://www.almoststochastic.com/2013/06/nonnegative-matrix-factorization.html)
+  -[NMF from scratch using SGD](https://github.com/carriexu24/NMF-from-scratch-using-SGD)
+  -[Python Matrix Factorization](https://albertauyeung.github.io/2017/04/23/python-matrix-factorization.html)
 
-<a href="https://github.com/hpark3910/nonnegative-matrix-factorization" class="uri">https://github.com/hpark3910/nonnegative-matrix-factorization</a>
-
-<a href="https://www.almoststochastic.com/2013/06/nonnegative-matrix-factorization.html" class="uri">https://www.almoststochastic.com/2013/06/nonnegative-matrix-factorization.html</a>
-
-<a href="https://github.com/carriexu24/NMF-from-scratch-using-SGD" class="uri">https://github.com/carriexu24/NMF-from-scratch-using-SGD</a>
-
-<a href="https://albertauyeung.github.io/2017/04/23/python-matrix-factorization.html" class="uri">https://albertauyeung.github.io/2017/04/23/python-matrix-factorization.html</a>
 
 

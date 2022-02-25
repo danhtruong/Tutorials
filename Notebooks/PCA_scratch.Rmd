@@ -1,14 +1,27 @@
 ---
-output: html_document
+title: Writing the code for PCA
+output:
+  md_document:
+    variant: markdown_github
 ---
+
+```{r opts, echo = FALSE}
+knitr::opts_chunk$set(
+  fig.path = "images/PCA_scratch_files/"
+)
+```
+
+## Principal Component Analysis
 
 In this post, we will extend what we did in the previous PCA tutorial by doing it from scratch in R. We will be focusing on Singular Value Decomposition (SVD), which is a tool for matrix factorization. SVD states that any matrix $M \in A^{m \times n} $ can be decomposed into the following:
 
 $$M = U \Sigma V^{T}$$
 
-where $U$ is an $m \times m$ unitary matrix, $\Sigma$ is a diagonal $m \times n$ matrix with non-negative real numbers on the diagonal, and $V$ is an $n \times n$ unitary matrix. If $M$ is real, then $U$ and $V$ are orthogonal matrices, or uncorrelated. $U$ and $V$ are equal to the eigenvectors of $MM^{t}$ and $M^{t}M$, respectively. The entries in $\Sigma$ are singular values of $M$. The number of non-zero singular values is equal to the rank of $M$. If you recall, the rank of a matrix is defined as the maximum number of linearly independent columns in the matrix. As it relates to PCA, these are the nummber of Principal Components. 
+where $U$ is an $m \times m$ unitary matrix, $\Sigma$ is a diagonal $m \times n$ matrix with non-negative real numbers on the diagonal, and $V$ is an $n \times n$ unitary matrix. If $M$ is real, then $U$ and $V$ are orthogonal matrices, or uncorrelated. $U$ and $V$ are equal to the eigenvectors of $MM^{t}$ and $M^{t}M$, respectively. The entries in $\Sigma$ are singular values of $M$. The number of non-zero singular values is equal to the rank of $M$. If you recall, the rank of a matrix is defined as the maximum number of linearly independent columns in the matrix. As it relates to PCA, these are the number of Principal Components. 
 
-Performing SVD on the covariance matrix of $M$ is essentially PCA. We will be using the Iris dataset.
+## Covariance matrix
+
+Performing SVD on the covariance matrix of $M$ is essentially PCA. We will be using the Iris data set.
 
 ```{r}
 data(iris)
@@ -64,11 +77,13 @@ sigma <- sigma * diag(length(sigma))
 sigma
 ```
 
+## Singular Value Decomposition
+
 Now recall the equation for SVD.
 
 $$M = U \Sigma V^{T}$$
 
-Now that, we have the decommposed values, we can recompose them using matrix multiplcation to recover our covariance matrix of the Iris dataset.
+Now that, we have the decomposed values, we can recompose them using matrix multiplication to recover our covariance matrix of the Iris data set.
 
 ```{r}
 M <- U %*% sigma %*% t(V)
@@ -78,17 +93,19 @@ covariance
 cat('\n Are the values the same:', all(round(M - covariance, 3) == 0)) 
 ```
 
-PCA is an orthoganol projection. To generate, we project our `D_centered` matrix using the rotation matrix `V`.
+PCA is an orthogonal projection. To generate, we project our `D_centered` matrix using the rotation matrix `V`.
 
 ```{r}
 pc <- D_centered %*% V
 head(pc)
 ```
 
+## Comparing to prcomp()
+
 ```{r}
 pca_prcomp <- prcomp(D_centered, center = F)
 head(pca_prcomp$x)
-cat('\n Comparing our calculations to the R function prcommp:\n\n')
+cat('\n Comparing our calculations to the R function prcomp:\n\n')
 cat('\n Do we get the same rotation matrix:',  all(round(pca_prcomp$rotation - V, 3) == 0)) 
 cat('\n Are the principal components the same:', all(round(pca_prcomp$x - pc, 3) == 0)) 
 ```
@@ -104,19 +121,19 @@ pca_prcomp$rotation
 ```{r}
 V[,3]  <- -V[,3]
 pc[,3]  <- -pc[,3]
-cat('\n Comparing our calculations to the R function prcommp:\n\n')
+cat('\n Comparing our calculations to the R function prcomp:\n\n')
 cat('\n Do we get the same rotation matrix:',  all(round(pca_prcomp$rotation - V, 3) == 0)) 
 cat('\n Are the principal components the same:', all(round(pca_prcomp$x - pc, 3) == 0)) 
 ```
 
 
-Sources and additional information:
+## Additional Resources
 
-<a href="https://www.datacamp.com/community/tutorials/pca-analysis-r" class="uri">https://www.datacamp.com/community/tutorials/pca-analysis-r</a>
+  - [PCA Analysis](https://www.datacamp.com/community/tutorials/pca-analysis-r)
 
-<a href="https://wilkelab.org/classes/SDS348/2016_spring/worksheets/class9.html" class="uri">https://wilkelab.org/classes/SDS348/2016_spring/worksheets/class9.html</a>
+  - [PCA done from scratch with R](https://medium.com/@ravikalia/pca-in-matrix-based-frameworks-9719e29cf7e6)
 
-<a href="https://medium.com/@ravikalia/pca-in-matrix-based-frameworks-9719e29cf7e6" class="uri">https://medium.com/@ravikalia/pca-in-matrix-based-frameworks-9719e29cf7e6</a>
+  - [Singular value decomposition](PCA done from scratch with R)
 
-<a href="https://rpubs.com/aaronsc32/singular-value-decomposition-r" class="uri">https://rpubs.com/aaronsc32/singular-value-decomposition-r</a>
+
 

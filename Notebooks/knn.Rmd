@@ -1,0 +1,91 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+euclidean_distance <- function(a,b){
+  d = 0 
+  for (i in 1:length(a)){
+    d = d + (a[[i]] - b[[i]])**2
+  }
+  return(sqrt(d))
+}
+```
+
+```{r}
+data(iris)
+head(iris)
+```
+```{r}
+df <- iris[,-5]
+head(df)
+```
+
+```{r}
+dist = matrix(0, nrow = nrow(df), ncol = 1)
+for(i in 1:dim(df)[1]){
+  dist[[i]] = euclidean_distance(df[1,], df[i,])
+}
+```
+
+```{r}
+get_nn <- function(data, test, k){
+  dist = matrix(0, nrow = nrow(data), ncol = 1)
+  for(i in 1:dim(df)[1]){
+    dist[[i]] = euclidean_distance(df[test,], df[i,])
+  }
+  names(dist) = c(1:nrow(dist))
+  index = as.numeric(names(sort(dist))[1:k])
+  return(index)
+}
+```
+
+```{r}
+dist[get_nn(df, 1,10),]
+```
+```{r}
+knn_prediction <- function(data, test, k, labels){
+  dist = matrix(0, nrow = nrow(data), ncol = 1)
+  for(i in 1:dim(df)[1]){
+    dist[[i]] = euclidean_distance(df[test,], df[i,])
+  }
+  names(dist) = c(1:nrow(dist))
+  index = as.numeric(names(sort(dist))[1:k])
+  prediction = c(labels[index] %in% labels[test])
+  return(data.frame(Correct = sum(prediction == T),
+                    Incorrect = sum(prediction == F)))
+}
+```
+
+```{r}
+knn_prediction(df, 100, 40, iris$Species)
+```
+
+```{r}
+gramMatrix <- function(X,Y)
+{
+  tcrossprod(X, Y)
+}
+compute_pairwise_distance=function(X,Y)
+{
+  xn <- rowSums(X ** 2)
+  yn <- rowSums(Y ** 2)
+  outer(xn, yn,'+') - 2 * tcrossprod(X, Y)
+}
+
+
+predict.my_knn_regressor <- function(my_knn,x)
+{
+  if (!is.matrix(x))
+  {
+    x=as.matrix(x)
+  }
+  ##Compute pairwise distance
+  dist_pair <- compute_pairwise_distance(x,my_knn[['points']])
+  ##as.matrix(apply(dist_pair,2,order) <= my_knn[['k']]) orders the points by distance and select the k-closest points
+  ##The M[i,j]=1 if x_j is on the k closest point to x_i
+  t(as.matrix(apply(dist_pair,2,order) <= my_knn[['k']])) %*% my_knn[['value']] / my_knn[['k']]
+}
+```
+

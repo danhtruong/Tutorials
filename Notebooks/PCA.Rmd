@@ -1,9 +1,19 @@
 ---
-title: "Pincipal Component Analysis"
-output: md_document
+title: "Principal Component Analysis"
+output:
+  md_document:
+    variant: markdown_github
 ---
 
-In this post, I will be discussing Principal Component Analysis (PCA) and how it can be used in datasets to understand variation with many different variables. Many real-world datasets are often in high dimensions. In otherwords, they contain so many variables that it is difficult to distinguish a trend. 
+```{r opts, echo = FALSE}
+knitr::opts_chunk$set(
+  fig.path = "images/PCA_files/"
+)
+```
+
+## Principal Component Analysis 
+
+In this post, I will be discussing Principal Component Analysis (PCA) and how it can be used in data sets to understand variation with many different variables. Many real-world data sets are often in high dimensions. In other words, they contain so many variables that it is difficult to distinguish a trend. 
 
 PCA is a type of dimensional reduction method that can assist us by identifying which variables contribute to the variation within the data. It is similar to fitting a best fit line onto a 2D graph, but in this case there may be more than three-dimensions of data. It is formulated in the language of linear algebra and is an often used technique in data science and bioinformatics. 
 
@@ -13,8 +23,9 @@ library(cowplot) # required to arrange multiple plots in a grid
 library(dplyr)
 ```
 
+## Exploring the data
 
-We will be using the often cited `iris` dataset. As you can see, there are more than five dimensions of data. 
+We will be using the often cited `iris` data set. As you can see, there are more than five dimensions of data.
 
 ```{r}
 head(iris)
@@ -32,14 +43,16 @@ plot_grid(p1, p2, p3, p4, labels = "AUTO")
 
 As you can see from the graphs, petal length, petal width, and perhaps sepal length contribute the most to the differences between the three species. 
 
-Let's try using PCA as a better method for detecting such patterns. First, we will only include numerical data. We will pass our dataset (excluding the Species column) into the function `prcomp`. `center` and `scale` will be set to true to scale the data to 0 mean and unit variance.
+## Using PCA
+
+Let's try using PCA as a better method for detecting such patterns. First, we will only include numerical data. We will pass our data set (excluding the Species column) into the function `prcomp`. `center` and `scale` will be set to true to scale the data to 0 mean and unit variance.
 
 ```{r}
 iris.pca <- prcomp(iris[,1:4], center = TRUE, scale. = TRUE)
 summary(iris.pca)
 ```
 
-The main results are that Principal Components 1 and 2 explains the majority of the variance within the dataset. These values are derived from the eigenvectors and eigenvalues from the covariance matrix. 
+The main results are that Principal Components 1 and 2 explains the majority of the variance within the data set. These values are derived from the eigenvectors and eigenvalues from the covariance matrix. 
 
 To better understand, you will need a basic understanding of eigenvectors and eigenvalues. To simply put, an eigenvector is a vector whose direction remains unchanged after a linear transformation. In that regard, an eigenvector provides direction or orientation of the data, like 90 or 45 degrees. The change after a linear transformation is described as the eigenvalue. In other words, the variance or spread of the data is explained by the eigenvalue. In addition, an *n*-th dimensional matrix will have the same *n* eigenvectors/eigenvalues. Therefore, each principal component is an eigenvector and PC1 has the highest eigenvalue (highest variance).
 
@@ -87,11 +100,9 @@ ggplot(rotation_data) +
   coord_fixed() # fix aspect ratio to 1:1
 ```
 
-As you can see, before performing a PCA, we used four graphs to observe the conclusion that petal length, petal width, and sepal length contributed the most to the variance in species. With PCA, we could easily observe this with the PCA plot of PC1 vs PC2. In addition, we used a simple dataset to illustrate this. Many real-world datasets consists of much higher dimensions. 
+As you can see, before performing a PCA, we used four graphs to observe the conclusion that petal length, petal width, and sepal length contributed the most to the variance in species. With PCA, we could easily observe this with the PCA plot of PC1 vs PC2. In addition, we used a simple dataset to illustrate this. Many real-world data sets consists of much higher dimensions. 
 
-Sources and additional information:
+## Additional Resources
+  - [https://www.r-bloggers.com/2021/05/principal-component-analysis-pca-in-r/](https://www.r-bloggers.com/2021/05/principal-component-analysis-pca-in-r/)
 
-https://www.datacamp.com/community/tutorials/pca-analysis-r
-
-https://wilkelab.org/classes/SDS348/2016_spring/worksheets/class9.html
 

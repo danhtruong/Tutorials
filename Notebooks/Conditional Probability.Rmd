@@ -1,0 +1,161 @@
+---
+title: "Conditional Probability with R"
+output:
+  md_document:
+    variant: markdown_github
+---
+
+In this post, we will explore conditional probability and how it relates to Bayes' Theorem.
+
+## Conditional Probability
+Conditional probability is the likelihood of an event or outcome occurring based on the occurrence of a previous event or outcome. Below is the equation for the conditional probability. 
+
+$P(A|B) = \frac{P(A \cap B) }{P(B)}$
+
+where:
+
+$P(A \cap B)$ is the probability that event A and event B both occur.
+
+$P(B)$ is the probability that event B occurs.
+
+For example:
+
+ - Event A is a person completing their projects on time in a year. There is 85% chance that this person will complete their work on time. 
+ - Event B is that this person receiving a raise at the end of the year. Raises are only given to to 45% of those that complete their work on time in a year.  
+ - P(complete work and raise) = P(raise|complete work) P(complete work) =  0.45 * 0.85 = 0.3825
+ 
+Looks like working hard does pay off. Conditional probability implies there is a relationship between these two events, such as the probability as completing your work on time in a year, and receiving a raise. In other words, conditional probability depends on a previous result. In this case, it is the probability of completing your work on time.
+
+Let's take a look at a survey given to male and female students and asking what their favorite past times are. Below a prepared a function `rng_survey()` to generate the survey answers. 
+
+```{r}
+#helper function for our survey
+rng_survey <- function(max, n){ 
+  #max is the maximum number of surveys for a participant group (ie. Male)
+  #n is the number of possible answers
+  total = 0
+  while (total != max){
+    x <- sample(1:max, n, replace = TRUE)
+    total = sum(x)
+  }
+  return(x)
+}
+```
+
+```{r}
+#male = rng_survey(150,4)
+#female = rng_survey(150,4)
+#cat("male answers:", male, "\n") 
+#cat("female answers:", female, "\n") 
+
+#male answers: 7 19 26 98 
+#female answers: 7 69 40 34 
+```
+
+Using the function, we create a data frame with the survey answers. 
+```{r}
+#create data frame for the survey responses
+df <- data.frame(gender=rep(c('Male', 'Female'), each=150),
+                 sport=rep(c('Exercise', 'Cooking', 'Reading', 'Television',
+                             'Exercise', 'Cooking', 'Reading', 'Television'),
+                              times=c(7, 19, 26, 98, 7, 69, 40, 34 )))
+df
+```
+
+We convert the data frame to a table. 
+```{r}
+#create two-way table from data frame
+survey_data <- addmargins(table(df$gender, df$sport))
+
+survey_data
+```
+
+We can extract information from our table by calling a row and a column. For instance, let's ask for the number of males that prefer cooking.
+
+```{r}
+survey_data['Male', 'Cooking']
+```
+
+Now we can ask the probability of being male given that they prefer cooking. We know that the probability of being male is `0.5`. We can calculate the rest from the table. 
+
+```{r}
+P_male = 0.5
+P_cooking_male = survey_data['Male', 'Cooking'] / survey_data['Male', 'Sum'] #probability of only males that prefer cooking
+
+P_male_P_cooking_male = P_male * P_cooking_male
+P_cooking = survey_data['Sum', 'Cooking'] / survey_data['Sum', 'Sum'] #probability of male and female that prefers cooking
+
+P_male_cooking =  P_male_P_cooking_male / P_cooking
+
+P_male_cooking #probability of being male given they prefer cooking
+```
+
+Alternatively, we can use the table to easily answer the same problem. 
+```{r}
+survey_data['Male', 'Cooking'] / survey_data['Sum', 'Cooking'] 
+```
+
+Next, we can ask the probability of being female given that they prefer reading. 
+```{r}
+survey_data['Female', 'Reading'] / survey_data['Sum', 'Reading']
+```
+## Bayes' Theorem
+
+Suppose that we have the same survey but male and female was not recorded by accident. How could we solve the probability of being male given that they prefer cooking? Let us assume from a previous survey we knew that 12.67% of males prefer to cook or is the probability of preferring to cook given that they are male. We can use something called Bayes' Theorem,
+
+$P(A|B) = \frac{P(B|A) P(A) }{P(B)}$.
+
+Bayes' Theorem describes the probability of an event based on prior knowledge of conditions that may be related to the event. 
+
+Knowing that the equation for conditional probability is
+
+$P(A|B) = \frac{P(A \cap B) }{P(B)}$
+
+then 
+
+$P(A \cap B)  = P(A|B)P(B)$
+
+and 
+
+$P(A \cap B)  = P(B|A)P(A)$.
+
+We can solve for $P(A \cap B)$ with substitution to yield
+
+$P(A|B) = \frac{P(B|A)P(A)}{P(B)}$.
+
+```{r}
+#view table
+survey_data
+```
+
+```{r}
+P_male = 0.5
+P_cooking_male = 0.1267 #probability of prefering to cook given that they are male
+P_cooking = survey_data['Sum', 'Cooking'] / survey_data['Sum', 'Sum'] #probability of male and female that prefers cooking
+
+P_male_cooking =  (P_cooking_male * P_male) / P_cooking
+
+P_male_cooking #probability of being male given they prefer cooking
+```
+
+Let's try to solve for the reverse, the probability of preferring to cook given that they are male, using Bayes' Theorem. 
+
+```{r}
+P_male_cooking * P_cooking / P_male
+```
+
+Is there a way to solve for the probability of preferring to cook given that they are female using Bayes' Theorem?
+```{r}
+P_female = 1 - P_male #We have a binary choice and the probabilities sum up to 1
+P_female_cooking = 1 - P_male_cooking
+P_female_cooking * P_cooking / P_female
+```
+Looking back at the table, we can use Bayes' Theorem to solve this problem. 
+```{r}
+survey_data['Female', 'Cooking'] / survey_data['Female', 'Sum']
+```
+
+
+## Additional Resources
+ - [Conditional Probability with R](https://districtdatalabs.silvrback.com/conditional-probability-with-r)
+ - [Introduction to Conditional Probability and Bayes theorem in R for data science professionals](https://www.analyticsvidhya.com/blog/2017/03/conditional-probability-bayes-theorem/)

@@ -1,7 +1,11 @@
 ---
 title: "Text Mining using TidyText"
-output: html_notebook
+output:
+  md_document:
+    variant: markdown_github
 ---
+
+#What is text mining?
 
 Text mining is a process of discovering new and latent features within a body of text. It uses Natural Language Processing (NLP) to enable computers to digest human language. It has many uses in the real world. A couple of examples including:
 
@@ -9,6 +13,8 @@ Text mining is a process of discovering new and latent features within a body of
 * Sentiment Analysis
 * Fraud Detection
 * Knowledge Management
+
+## TidyText
 
 In this post, we will use the package `tidytext`, which is part of the `tidyverse`. You can read more about it [here](https://www.tidyverse.org/). `tidytext` is a package that uses tidy data principles to wrangle and visualize text data. In this post, we will process some text and maybe discover new information. First, make sure you have the following libraries installed, `tidytext`, `dplyr`, `ggplot2`,`stringi`, `textclean`, and `forcats`. 
 
@@ -24,8 +30,8 @@ library(forcats)
 
 We can gather data by mining text  from Wikipedia. Let's import nine articles with topics of math, sports, and fantasy books. This will be important later when we try to perform text analytics. We will use the function `readLines` to directly connect to a Wikipedia URL and read all text lines. 
 ```{r}
-wiki <- "http://en.wikipedia.org/wiki/"
-titles <- c("Integral", "Derivative",
+wiki <- "https://en.wikipedia.org/wiki/"
+titles <- c("Mathematics", "Derivative",
     "Calculus", "Football", "Soccer", "Basketball",
     "A_Song_of_Ice_and_Fire", "The_Lord_of_the_Rings", "His_Dark_Materials")
 articles <- character(length(titles))
@@ -36,7 +42,9 @@ for (i in 1:length(titles)) {
 length(articles)
 ```
 
-Now that we have imported our articles, which we will now call documents. We can see that it is a character vector with the length of 9. This meansthat all of the text has been imported as a single cell within a vector. We need to separate each word out from the documents to be able to count them. We use a process called _tokenization_. While a computer will read strings as a series of character, humans will read it as a sentence of words. To reproduce this for computers, we can split the string using a space delimiter, `" "`, and then splitting the sentence into words or tokens. Let's take a look at an example from one of our documents.
+## Tokenization
+
+Now that we have imported our articles, which we will now call documents. We can see that it is a character vector with the length of 9. This means that all of the text has been imported as a single cell within a vector. We need to separate each word out from the documents to be able to count them. We use a process called _tokenization_. While a computer will read strings as a series of character, humans will read it as a sentence of words. To reproduce this for computers, we can split the string using a space delimiter, `" "`, and then splitting the sentence into words or tokens. Let's take a look at an example from one of our documents.
 
 ```{r}
 text <- c('A Song of Ice and Fire is a series of epic fantasy novels by the American novelist and screenwriter George R. R. Martin. He began the first volume of the series, A Game of Thrones, in 1991, and it was published in 1996.')
@@ -88,6 +96,9 @@ document_words[document_words$titles == 'Football',] %>%
   geom_col() +
   labs(y = NULL)
 ```
+
+## Term Frequency
+
 Let's try to contextualize this data by ranking them based on how often they appear within the document, instead of looking at the absolute count. This is called _term frequency_ (TF) and it gives the frequency of the word in each document. The TF is defined as $tf(t,d)$:
 $$tf(t,d) = \frac{f_{t,d}}{\Sigma_{k}f_{t,d}}$$
 where $f_{t,d}$ is the raw count of each term. In addition, each document will have its own TF. Let's calculate it by finding the total number of words that appears per document. 
@@ -108,6 +119,9 @@ freq_by_rank <- document_words %>%
   ungroup()
 head(freq_by_rank)
 ```
+
+## TF-IDF
+
 However, there are also rare words that may be important that may be lost by using TF, since TF is influenced by the length of the document. Here we introduce _inverse document frequency_ (IDF), which weighs the rare words across all documents by dividing the total number of documents by the number of documents containing the term. We add a $ + 1$ term to prevent division by 0.
 $$idf(t,D) = log \frac{N}{|d \in D: t \in d| + 1}$$
 We can combine this with TF to produce the TF-IDF score. Now TF will be weighted based on if they show up in other documents. 
@@ -131,6 +145,9 @@ document_tf_idf %>%
   facet_wrap(~titles, ncol = 2, scales = "free") +
   labs(x = "tf-idf", y = NULL)
 ```
+
+## Latent Semantic Analysis
+
 For the most part, the top words weighted using TF-IDF makes sense. Now that we have set up our data, we can start digging in deeper to find some relationships between the documents. We will take a look at _Latent Semantic Analysis_ (LSA). It is a NLP technique that analyzes a set of documents and the terms within to find common or divergent concepts related to the documents and terms. We can extend this definition of LSA to be used as a method for classifying documents into different topics. To start, we need to convert our data into a term-document matrix, where the columns corresponds to documents and the rows correspond to terms. Document-term matrix is the transpose version.
 
 ```{r}
@@ -165,7 +182,7 @@ colnames(LSA$v) <- paste0('LSA_', c(1:dim(LSA$v)[2]))
 colnames(LSA$u) <- paste0('LSA_', c(1:dim(LSA$u)[2]))
 ```
 
-We take the right-singular vector $V$, which contains a set of orthonormal vectors that spans the row space of our term-document matrix. By plotting the first two columns, we should observe a separation between the documents. 
+We take the right-singular vector $V$, which contains a set of orthogonal vectors that spans the row space of our term-document matrix. By plotting the first two columns, we should observe a separation between the documents. 
 ```{r}
 #install.packages("ggrepel")
 library(ggrepel) 
@@ -177,7 +194,7 @@ ggplot(df, aes(x = LSA_1, y = LSA_2, color = title )) +
   geom_text_repel(aes(label = title), color = 'black') +
   coord_fixed()
 ```
-We observe that the math-related documents are in the top-right quadrant, while the fantasy-related documents occupy the bottom-right quadrant. The sports-related documents occupy the bottom-left quadrant but are more spread. We can take the top terms by ordering the terms in each column within the left-singular vector $U$, which are orthnonormal vectors that span the column space of the term-document matrix. 
+We observe that the math-related documents are in the top-right quadrant, while the fantasy-related documents occupy the bottom-right quadrant. The sports-related documents occupy the bottom-left quadrant but are more spread. We can take the top terms by ordering the terms in each column within the left-singular vector $U$, which are orthogonal vectors that span the column space of the term-document matrix. 
 ```{r}
 df <- LSA$u %>% as.data.frame()
 df$word <- rownames(df)
@@ -202,6 +219,9 @@ ggplot(df, aes(x = LSA_3, y = LSA_4, color = title )) +
   geom_text_repel(aes(label = title), color = 'black') +
   coord_fixed()
 ```
+
+## Non-negative Matrix Factorization
+
 As expected, `basketball` is separated from the other sports-related documents along the `LSA_4` dimension. We can also use _Non-negative Matrix Factorization_, which decomposes a matrix into linear combination of vectors that are non-negative. This differs from SVD, which maintains orthogonality between columns.
 
 ```{r}
@@ -224,8 +244,10 @@ df %>%
   facet_wrap(~name, ncol = 2, scales = "free") +
   labs(x = "Weight", y = NULL)
 ```
-Here we see a slightly different result. We first dimension `Topic_1` is composed of terms related to His_Dark_Materials" and A_Song_of_Ice_and_Fire", but not "The_Lord_of_the_Rings". On the other hand, `Topic_2` contains terms related to both "The_Lord_of_the_Rings" and "Derivative". While weird, it is not inexplicable. We chose the number of topics or factorization rank _a priori_ and it may not have been the most optimal number. Too high a number, we risk overfitting, while too low of a number will provide a bad representation of the data. There are several techniques that we can use to find the optimal value that we won't dig into here.  
+Here we see a slightly different result. We first dimension `Topic_1` is composed of terms related to His_Dark_Materials" and A_Song_of_Ice_and_Fire", but not "The_Lord_of_the_Rings". On the other hand, `Topic_2` contains terms related to both "The_Lord_of_the_Rings" and "Derivative". While weird, it is not inexplicable. We chose the number of topics or factorization rank _a priori_ and it may not have been the most optimal number. Too high a number, we risk over fitting, while too low of a number will provide a bad representation of the data. There are several techniques that we can use to find the optimal value that we won't dig into here.  
 
+
+## Additional Resources
 
 https://www.tidytextmining.com/index.html
 
